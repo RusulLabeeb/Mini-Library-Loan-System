@@ -29,9 +29,13 @@ public class InMemoryBookService : IBookService
     }
 
     public List<BookDto> GetBooks() => throw new NotImplementedException();
+    public Task<bool> UpdateBook(UpdateBookRequest book)
+    {
+        throw new NotImplementedException();
+    }
 
 
-    public bool DeleteBook(int id)
+    public async Task<bool> DeleteBook(int id)
     {
         var book = Books.FirstOrDefault(b => b.Id == id);
         if (book is null)

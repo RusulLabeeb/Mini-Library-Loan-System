@@ -10,6 +10,8 @@ public interface IBookStoreDbContext
     public DbSet<AuthorBio> AuthorBios { get; set; }
     public DbSet<Genre> Genres { get; set; }
     public DbSet<BookGenre> BookGenres { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<AuditLog>  AuditLogs { get; set; }
     
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     int SaveChanges();

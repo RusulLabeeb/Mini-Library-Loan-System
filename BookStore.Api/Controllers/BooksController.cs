@@ -3,6 +3,8 @@ using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using BookStore.Application.Services;
 using BookStore.Domain.Entities;
+using BookStore.Infrastructure.Constants;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.Api.Controllers;
@@ -31,11 +33,21 @@ public class BooksController(IBookService bookService) : BaseController
         var result = bookService.CreateBook(request);
         return Ok(result);
     }
+
+    [HttpPut]
+    public async Task<ActionResult<Book?>> UpdateBook([FromBody] UpdateBookRequest request)
+    {
+        var result = await bookService.UpdateBook(request);
+        if (result)
+            return NoContent();
+        return BadRequest("Book was not found or data provided is invalid");
+    }
     
     [HttpDelete("{id:int}")]
-    public ActionResult<Book> DeleteBook(int id)
+    [Authorize(AuthenticationSchemes = AuthConstants.BasicScheme)]
+    public async Task<ActionResult<Book>> DeleteBook(int id)
     {
-        var result = bookService.DeleteBook(id);
+        var result = await bookService.DeleteBook(id);
         if (!result)
             return NotFound();
         return NoContent();

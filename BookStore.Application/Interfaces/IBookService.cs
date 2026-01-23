@@ -8,5 +8,6 @@ public interface IBookService
     Book CreateBook(BookRequest request);
     Book? GetById(int id);
     List<BookDto> GetBooks();
-    bool DeleteBook(int id);
+    Task<bool> UpdateBook(UpdateBookRequest book);
+    Task<bool> DeleteBook(int id);
 }
