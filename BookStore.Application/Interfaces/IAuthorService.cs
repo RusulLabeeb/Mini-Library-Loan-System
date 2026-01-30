@@ -7,5 +7,7 @@ namespace BookStore.Application.Interfaces;
 public interface IAuthorService
 {
     Author CreateAuthor(AuthorRequest request);
-    Task<PaginatedList<AuthorDto>> GetAuthors(PaginatedRequest request);
+    Task<PagedList<AuthorDto>> GetAuthors(PaginatedRequest request);
+    Task<bool> UpdateAuthor(int id, AuthorRequest request);
+    Task<bool> DeleteAuthor(int id);
 }

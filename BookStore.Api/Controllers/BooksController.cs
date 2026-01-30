@@ -15,9 +15,9 @@ namespace BookStore.Api.Controllers;
 public class BooksController(IBookService bookService, ICacheService cacheService) : BaseController
 {
     [HttpGet]
-    public ActionResult<ApiResponse<PagedList<BookDto>>> GetBooks([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public ActionResult<ApiResponse<PagedList<BookDto>>> GetBooks([FromQuery] PaginatedRequest request)
     {
-        var cacheKey = $"books_all_{pageNumber}_{pageSize}";
+        var cacheKey = $"books_all_{request.Page}_{request.PageSize}_{request.SortBy}_{request.SortOrder}_{request.SearchQuery}";
         var cachedBooks = cacheService.Get<PagedList<BookDto>>(cacheKey);
 
         if (cachedBooks != null)
@@ -25,9 +25,22 @@ public class BooksController(IBookService bookService, ICacheService cacheServic
             return Ok(new ApiResponse<PagedList<BookDto>>(cachedBooks, "Fetched from cache"));
         }
 
-        var result = bookService.GetBooksPaged(pageNumber, pageSize);
+        var result = bookService.GetBooksPaged(request);
         cacheService.Set(cacheKey, result, TimeSpan.FromSeconds(30));
 
+        return Ok(new ApiResponse<PagedList<BookDto>>(result));
+    }
+
+    [HttpGet("search")]
+    public ActionResult<ApiResponse<PagedList<BookDto>>> SearchBooks([FromQuery] string query, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        var request = new PaginatedRequest
+        {
+            Page = page,
+            PageSize = pageSize,
+            SearchQuery = query
+        };
+        var result = bookService.GetBooksPaged(request);
         return Ok(new ApiResponse<PagedList<BookDto>>(result));
     }
 
@@ -50,22 +63,24 @@ public class BooksController(IBookService bookService, ICacheService cacheServic
     }
 
     [HttpPut]
-    public async Task<ActionResult<Book?>> UpdateBook([FromBody] UpdateBookRequest request)
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ApiResponse<bool>>> UpdateBook([FromBody] UpdateBookRequest request)
     {
         var result = await bookService.UpdateBook(request);
         if (result)
-            return NoContent();
-        return BadRequest("Book was not found or data provided is invalid");
+            return Ok(new ApiResponse<bool>(true, "Book updated successfully"));
+
+        return BadRequest(new ApiResponse<bool>(new List<string> { "Book was not found or data provided is invalid" }, "Update failed"));
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(AuthenticationSchemes = AuthConstants.BasicScheme)]
-    public async Task<ActionResult<Book>> DeleteBook(int id)
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ApiResponse<bool>>> DeleteBook(int id)
     {
         var result = await bookService.DeleteBook(id);
         if (!result)
-            return NotFound();
-        return NoContent();
-    }
+            return NotFound(new ApiResponse<bool>(new List<string> { "Book was not found" }, "Delete failed"));
 
+        return Ok(new ApiResponse<bool>(true, "Book deleted successfully"));
+    }
 }

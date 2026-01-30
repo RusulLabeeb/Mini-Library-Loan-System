@@ -31,14 +31,33 @@ public class BookService(IBookStoreDbContext dbContext) : IBookService
         return books;
     }
 
-    public PagedList<BookDto> GetBooksPaged(int pageNumber, int pageSize)
+    public PagedList<BookDto> GetBooksPaged(PaginatedRequest request)
     {
         var query = dbContext.Books
             .AsNoTracking()
             .Include(b => b.Author)
-            .ProjectToType<BookDto>();
+            .AsQueryable();
 
-        return PagedList<BookDto>.Create(query, pageNumber, pageSize);
+        // Search
+        if (!string.IsNullOrWhiteSpace(request.SearchQuery))
+        {
+            var search = request.SearchQuery.ToLower();
+            query = query.Where(b => b.Title.ToLower().Contains(search));
+        }
+
+        // Sorting
+        bool isDesc = request.SortOrder?.ToLower() == "desc";
+        query = request.SortBy?.ToLower() switch
+        {
+            "title" => isDesc ? query.OrderByDescending(b => b.Title) : query.OrderBy(b => b.Title),
+            "id" => isDesc ? query.OrderByDescending(b => b.Id) : query.OrderBy(b => b.Id),
+            "category" => isDesc ? query.OrderByDescending(b => b.Genres.FirstOrDefault().Genre.Name) : query.OrderBy(b => b.Genres.FirstOrDefault().Genre.Name),
+            _ => query.OrderBy(b => b.Id)
+        };
+
+        var projectedQuery = query.ProjectToType<BookDto>();
+
+        return PagedList<BookDto>.Create(projectedQuery, request.Page, request.PageSize);
     }
 
     public async Task<bool> UpdateBook(UpdateBookRequest request)
@@ -61,7 +80,9 @@ public class BookService(IBookStoreDbContext dbContext) : IBookService
 
     public Book? GetById(int id)
     {
-        throw new NotImplementedException();
+        return dbContext.Books
+            .Include(b => b.Author)
+            .FirstOrDefault(b => b.Id == id);
     }
 
 

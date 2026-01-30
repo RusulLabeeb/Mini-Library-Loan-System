@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using BookStore.Api.Common;
+using BookStore.Application.Common;
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -11,10 +12,10 @@ namespace BookStore.Api.Controllers;
 public class LoansController(ILoanService loanService) : BaseController
 {
     [HttpPost]
-    public async Task<ActionResult<LoanDto>> CreateLoan([FromBody] CreateLoanRequest request)
+    public async Task<ActionResult<ApiResponse<LoanDto>>> CreateLoan([FromBody] CreateLoanRequest request)
     {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
         var result = await loanService.CreateLoanAsync(userId, request);
-        return CreatedAtAction(nameof(CreateLoan), new { id = result.Id }, result);
+        return CreatedAtAction(nameof(CreateLoan), new { id = result.Id }, new ApiResponse<LoanDto>(result));
     }
 }

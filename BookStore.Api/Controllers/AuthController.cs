@@ -1,4 +1,5 @@
 using BookStore.Api.Common;
+using BookStore.Application.Common;
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -8,28 +9,30 @@ namespace BookStore.Api.Controllers;
 public class AuthController(IAuthService authService) : BaseController
 {
     [HttpPost("/login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
+    public async Task<ActionResult<ApiResponse<AuthResponse>>> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
         try
         {
-            return Ok(await authService.LoginAsync(request));
+            var result = await authService.LoginAsync(request);
+            return Ok(new ApiResponse<AuthResponse>(result));
         }
         catch (Exception e)
         {
-            return BadRequest(e.Message);
+            return BadRequest(new ApiResponse<AuthResponse>(new List<string> { e.Message }, "Login failed"));
         }
     }
 
     [HttpPost("/register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+    public async Task<ActionResult<ApiResponse<AuthResponse>>> Register([FromBody] RegisterRequest request)
     {
         try
         {
-            return Ok(await authService.RegisterAsync(request));
+            var result = await authService.RegisterAsync(request);
+            return Ok(new ApiResponse<AuthResponse>(result));
         }
         catch (Exception e)
         {
-            return BadRequest(e.Message);
+            return BadRequest(new ApiResponse<AuthResponse>(new List<string> { e.Message }, "Registration failed"));
         }
     }
 }

@@ -21,19 +21,50 @@ public class AuthorService(IBookStoreDbContext dbContext) : IAuthorService
         return newAuthor;
     }
 
-    public Task<PaginatedList<AuthorDto>> GetAuthors(PaginatedRequest request)
+    public async Task<PagedList<AuthorDto>> GetAuthors(PaginatedRequest request)
     {
-        var query =  dbContext.Authors
-            .OrderBy(a => a.Id)
-            // .Select(author => new AuthorDto()
-            // {
-            //     Name = author.Name,
-            //     Id = author.Id
-            // })
-            .ProjectToType<AuthorDto>();
-        var test = query.Single();
-        var result = PaginatedList<AuthorDto>.CreateAsync(query, request.PageNumber, request.PageSize);
-        return result;
-        
+        var query = dbContext.Authors
+            .AsNoTracking()
+            .AsQueryable();
+
+        // Search
+        if (!string.IsNullOrWhiteSpace(request.SearchQuery))
+        {
+            var search = request.SearchQuery.ToLower();
+            query = query.Where(a => a.Name.ToLower().Contains(search));
+        }
+
+        // Sorting
+        bool isDesc = request.SortOrder?.ToLower() == "desc";
+        query = request.SortBy?.ToLower() switch
+        {
+            "name" => isDesc ? query.OrderByDescending(a => a.Name) : query.OrderBy(a => a.Name),
+            "id" => isDesc ? query.OrderByDescending(a => a.Id) : query.OrderBy(a => a.Id),
+            _ => query.OrderBy(a => a.Id)
+        };
+
+        var projectedQuery = query.ProjectToType<AuthorDto>();
+
+        return await PagedList<AuthorDto>.CreateAsync(projectedQuery, request.Page, request.PageSize);
+    }
+
+    public async Task<bool> UpdateAuthor(int id, AuthorRequest request)
+    {
+        var author = await dbContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
+        if (author == null) return false;
+
+        author.Name = request.Name;
+        await dbContext.SaveChangesAsync(default);
+        return true;
+    }
+
+    public async Task<bool> DeleteAuthor(int id)
+    {
+        var author = await dbContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
+        if (author == null) return false;
+
+        dbContext.Authors.Remove(author);
+        await dbContext.SaveChangesAsync(default);
+        return true;
     }
 }

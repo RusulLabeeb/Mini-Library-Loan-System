@@ -9,7 +9,7 @@ public interface IBookService
     Book CreateBook(BookRequest request);
     Book? GetById(int id);
     List<BookDto> GetBooks();
-    PagedList<BookDto> GetBooksPaged(int pageNumber, int pageSize);
+    PagedList<BookDto> GetBooksPaged(PaginatedRequest request);
 
     Task<bool> UpdateBook(UpdateBookRequest book);
     Task<bool> DeleteBook(int id);

@@ -15,7 +15,7 @@ public class InMemoryBookService : IBookService
 
     public Book CreateBook(BookRequest request)
     {
-        var newId = Books.Max(b => b.Id) + 1;
+        var newId = Books.Count > 0 ? Books.Max(b => b.Id) + 1 : 1;
         var newBook = new Book()
         {
             Id = newId,
@@ -32,11 +32,30 @@ public class InMemoryBookService : IBookService
 
     public List<BookDto> GetBooks() => Books.AsQueryable().ProjectToType<BookDto>().ToList();
 
-    public PagedList<BookDto> GetBooksPaged(int pageNumber, int pageSize)
+    public PagedList<BookDto> GetBooksPaged(PaginatedRequest request)
     {
-        var query = Books.AsQueryable().ProjectToType<BookDto>();
-        return PagedList<BookDto>.Create(query, pageNumber, pageSize);
+        var query = Books.AsQueryable();
+
+        // Search
+        if (!string.IsNullOrWhiteSpace(request.SearchQuery))
+        {
+            var search = request.SearchQuery.ToLower();
+            query = query.Where(b => b.Title.ToLower().Contains(search));
+        }
+
+        // Sorting
+        bool isDesc = request.SortOrder?.ToLower() == "desc";
+        query = request.SortBy?.ToLower() switch
+        {
+            "title" => isDesc ? query.OrderByDescending(b => b.Title) : query.OrderBy(b => b.Title),
+            "id" => isDesc ? query.OrderByDescending(b => b.Id) : query.OrderBy(b => b.Id),
+            _ => query.OrderBy(b => b.Id)
+        };
+
+        var projectedQuery = query.ProjectToType<BookDto>();
+        return PagedList<BookDto>.Create(projectedQuery, request.Page, request.PageSize);
     }
+
     public Task<bool> UpdateBook(UpdateBookRequest book)
     {
         throw new NotImplementedException();

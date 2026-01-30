@@ -5,6 +5,6 @@ namespace BookStore.Application.Interfaces;
 
 public interface IGenreService
 {
-    Task<ServiceResult<PaginatedList<GenreDto>>> GetGenres(PaginatedRequest request);
+    Task<ServiceResult<PagedList<GenreDto>>> GetGenres(PaginatedRequest request);
     Task<ServiceResult<GenreDto>> CreateGenre(GenreDto request);
 }

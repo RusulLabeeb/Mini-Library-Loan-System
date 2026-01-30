@@ -3,7 +3,7 @@ using BookStore.Api.Common;
 using BookStore.Application.Common;
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
-using BookStore.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.Api.Controllers;
@@ -12,14 +12,17 @@ public class GenresController(IGenreService genreService) : BaseController
 {
     [HttpGet]
     [ServiceFilter(typeof(LogActivityAttribute))]
-    public async Task<IActionResult> Get([FromQuery]PaginatedRequest request)
+    public async Task<ActionResult<ApiResponse<PagedList<GenreDto>>>> Get([FromQuery] PaginatedRequest request)
     {
-        return HandleResult(await genreService.GetGenres(request));
+        var result = await genreService.GetGenres(request);
+        return HandleResult(result);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] GenreDto request)
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ApiResponse<GenreDto>>> Post([FromBody] GenreDto request)
     {
-        return HandleResult(await genreService.CreateGenre(request));
+        var result = await genreService.CreateGenre(request);
+        return HandleResult(result);
     }
 }
