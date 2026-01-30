@@ -1,4 +1,5 @@
 using BookStore.Api.Common;
+using BookStore.Application.Common;
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
 using BookStore.Application.Services;
@@ -9,29 +10,43 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.Api.Controllers;
 
-public class BooksController(IBookService bookService) : BaseController
+[Route("api/[controller]")]
+[ApiController]
+public class BooksController(IBookService bookService, ICacheService cacheService) : BaseController
 {
     [HttpGet]
-    public ActionResult<List<Book>> GetBooks()
+    public ActionResult<ApiResponse<PagedList<BookDto>>> GetBooks([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var result = bookService.GetBooks();
-        return Ok(result);
+        var cacheKey = $"books_all_{pageNumber}_{pageSize}";
+        var cachedBooks = cacheService.Get<PagedList<BookDto>>(cacheKey);
+
+        if (cachedBooks != null)
+        {
+            return Ok(new ApiResponse<PagedList<BookDto>>(cachedBooks, "Fetched from cache"));
+        }
+
+        var result = bookService.GetBooksPaged(pageNumber, pageSize);
+        cacheService.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+
+        return Ok(new ApiResponse<PagedList<BookDto>>(result));
     }
 
     [HttpGet("{id:int}")]
-    public ActionResult<Book?> GetBookById(int id)
+    public ActionResult<ApiResponse<Book?>> GetBookById(int id)
     {
         var result = bookService.GetById(id);
         if (result is null)
-            return NotFound("Book was not found");
-        return Ok(result);
+            return NotFound(new ApiResponse<Book?>(new List<string> { "Book was not found" }, "Error"));
+
+        return Ok(new ApiResponse<Book?>(result));
     }
 
     [HttpPost]
-    public ActionResult<Book> CreateBook([FromBody] BookRequest request)
+    [Authorize(Roles = "Admin")]
+    public ActionResult<ApiResponse<Book>> CreateBook([FromBody] BookRequest request)
     {
         var result = bookService.CreateBook(request);
-        return Ok(result);
+        return CreatedAtAction(nameof(CreateBook), new { id = result.Id }, new ApiResponse<Book>(result));
     }
 
     [HttpPut]
@@ -42,7 +57,7 @@ public class BooksController(IBookService bookService) : BaseController
             return NoContent();
         return BadRequest("Book was not found or data provided is invalid");
     }
-    
+
     [HttpDelete("{id:int}")]
     [Authorize(AuthenticationSchemes = AuthConstants.BasicScheme)]
     public async Task<ActionResult<Book>> DeleteBook(int id)
@@ -52,5 +67,5 @@ public class BooksController(IBookService bookService) : BaseController
             return NotFound();
         return NoContent();
     }
-    
+
 }

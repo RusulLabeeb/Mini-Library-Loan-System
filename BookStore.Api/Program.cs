@@ -52,7 +52,7 @@ builder.Services.AddScoped<LogActivityAttribute>();
 builder.Services.AddMemoryCache();
 // 2. Add our abstraction (memory, redis, whatever cache provider)
 // We use Singleton because the engine is Singleton.
-builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
+builder.Services.AddSingleton<ICacheService, SimpleDictionaryCacheService>();
 
 builder.Services.RegisterMapsterConfiguration();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -77,7 +77,7 @@ builder.Services.AddAuthentication(options =>
         };
     })
     .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>(
-        AuthConstants.BasicScheme, 
+        AuthConstants.BasicScheme,
         null
     );
 
@@ -97,7 +97,7 @@ app.UseMiddleware<RequestTimingMiddleware>();
 app.UseExceptionHandler(o => { });
 // ORDER:
 // 1. Authentication: "Who are you?" (Checks the token headers, parses claims)
-app.UseAuthentication(); 
+app.UseAuthentication();
 
 // 2. Authorization: "Are you allowed?" (Checks [Authorize] attributes against claims)
 app.UseAuthorization();

@@ -1,6 +1,8 @@
 using BookStore.Application.DTOs;
+using BookStore.Application.Common;
 using BookStore.Application.Interfaces;
 using BookStore.Domain.Entities;
+using Mapster;
 
 namespace BookStore.Application.Services;
 
@@ -28,7 +30,13 @@ public class InMemoryBookService : IBookService
         return Books.FirstOrDefault(b => b.Id == id);
     }
 
-    public List<BookDto> GetBooks() => throw new NotImplementedException();
+    public List<BookDto> GetBooks() => Books.AsQueryable().ProjectToType<BookDto>().ToList();
+
+    public PagedList<BookDto> GetBooksPaged(int pageNumber, int pageSize)
+    {
+        var query = Books.AsQueryable().ProjectToType<BookDto>();
+        return PagedList<BookDto>.Create(query, pageNumber, pageSize);
+    }
     public Task<bool> UpdateBook(UpdateBookRequest book)
     {
         throw new NotImplementedException();

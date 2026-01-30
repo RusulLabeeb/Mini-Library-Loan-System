@@ -1,23 +1,19 @@
 using BookStore.Api.Common;
+using BookStore.Application.Common;
 using BookStore.Application.DTOs;
 using BookStore.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.Api.Controllers;
 
-public class UsersController : BaseController
+public class UsersController(ILoanService loanService) : BaseController
 {
-    private readonly ILoanService _loanService;
-
-    public UsersController(ILoanService loanService)
-    {
-        _loanService = loanService;
-    }
-
     [HttpGet("{userId:int}/loans")]
-    public async Task<ActionResult<List<LoanDto>>> GetUserLoans(int userId)
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<PagedList<LoanDto>>>> GetUserLoans(int userId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var result = await _loanService.GetUserLoansAsync(userId);
-        return Ok(result);
+        var result = await loanService.GetUserLoansPagedAsync(userId, pageNumber, pageSize);
+        return Ok(new ApiResponse<PagedList<LoanDto>>(result));
     }
 }

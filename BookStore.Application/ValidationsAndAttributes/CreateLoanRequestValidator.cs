@@ -7,10 +7,6 @@ public class CreateLoanRequestValidator : AbstractValidator<CreateLoanRequest>
 {
     public CreateLoanRequestValidator()
     {
-        RuleFor(l => l.UserId)
-            .GreaterThan(0)
-            .WithMessage("UserId must be greater than 0");
-        
         RuleFor(l => l.BookId)
             .GreaterThan(0)
             .WithMessage("BookId must be greater than 0");
